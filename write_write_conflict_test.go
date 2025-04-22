@@ -38,10 +38,16 @@ func TestWriteWriteConflict(t *testing.T) {
 	}
 	defer tx2.Rollback(ctx)
 
+	if _, err := tx1.Get(ctx, "key1"); err != nil {
+		t.Fatal(err)
+	}
 	if err := tx1.Set(ctx, "key1", strings.NewReader("value1")); err != nil {
 		t.Fatal(err)
 	}
 
+	if _, err := tx2.Get(ctx, "key1"); err != nil {
+		t.Fatal(err)
+	}
 	if err := tx2.Set(ctx, "key1", strings.NewReader("value2")); err != nil {
 		t.Fatal(err)
 	}

@@ -59,8 +59,12 @@ func commit(db *Database, tx *Transaction) error {
 	}
 
 	// Check for all write-write conflicts with the current state of the
-	// database.
+	// database. Identify and skip blind writes.
 	for key := range tx.writes {
+		if _, ok := tx.reads[key]; !ok {
+			// Skipping blind writes from write-write conflicts.
+			continue
+		}
 		mv, ok := db.kvs.Load(key)
 		if !ok {
 			continue

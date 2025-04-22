@@ -4,7 +4,6 @@ package kvmemdb
 
 import (
 	"context"
-	"log"
 	"math"
 	"slices"
 	"sync"
@@ -87,8 +86,6 @@ func (d *Database) closeSnapshot(s *Snapshot) {
 func (d *Database) NewTransaction(ctx context.Context) (*Transaction, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-
-	log.Printf("maxCommitVersion=%d", d.maxCommitVersion)
 
 	t := &Transaction{
 		db:              d,

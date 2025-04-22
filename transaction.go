@@ -51,7 +51,6 @@ func (t *Transaction) Set(ctx context.Context, key string, value io.Reader) erro
 
 	s := string(data)
 	t.writes[key] = &s
-	delete(t.reads, key)
 	return nil
 }
 
@@ -63,7 +62,6 @@ func (t *Transaction) Delete(ctx context.Context, key string) error {
 	}
 
 	t.writes[key] = nil
-	delete(t.reads, key)
 	return nil
 }
 
@@ -92,8 +90,6 @@ func (t *Transaction) Get(ctx context.Context, key string) (io.Reader, error) {
 			}
 			t.reads[key] = v
 			return strings.NewReader(v.Data()), nil
-		} else {
-			log.Printf("fetch not ok; snap-version=%d mv=%v", t.snapshotVersion, mv)
 		}
 	}
 	return nil, os.ErrNotExist
