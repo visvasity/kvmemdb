@@ -20,7 +20,7 @@ func TestAscendDescend(t *testing.T) {
 	db := New()
 
 	// Setup test data.
-	err := kv.WithReadWriter(ctx, db, func(ctx context.Context, rw kv.ReadWriter) error {
+	err := kv.WithReadWriter(ctx, db.NewTransaction, func(ctx context.Context, rw kv.ReadWriter) error {
 		if err := rw.Set(ctx, "key1", strings.NewReader("value1")); err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func TestAscendDescend(t *testing.T) {
 			// Test Ascend
 			var ascendKeys []string
 			var ascendErr error
-			err = kv.WithReadWriter(context.Background(), db, func(ctx context.Context, w kv.ReadWriter) error {
+			err = kv.WithReadWriter(context.Background(), db.NewTransaction, func(ctx context.Context, w kv.ReadWriter) error {
 				for k, v := range w.Ascend(ctx, tt.beg, tt.end, &ascendErr) {
 					data, err := io.ReadAll(v)
 					if err != nil {
@@ -119,7 +119,7 @@ func TestAscendDescend(t *testing.T) {
 			// Test Descend
 			var descendKeys []string
 			var descendErr error
-			err = kv.WithReadWriter(context.Background(), db, func(ctx context.Context, w kv.ReadWriter) error {
+			err = kv.WithReadWriter(context.Background(), db.NewTransaction, func(ctx context.Context, w kv.ReadWriter) error {
 				for k, v := range w.Descend(ctx, tt.beg, tt.end, &descendErr) {
 					data, err := io.ReadAll(v)
 					if err != nil {
@@ -152,7 +152,7 @@ func TestAscendDescend(t *testing.T) {
 			// Test Ascend
 			var ascendKeys []string
 			var ascendErr error
-			err = kv.WithReader(context.Background(), db, func(ctx context.Context, r kv.Reader) error {
+			err = kv.WithReader(context.Background(), db.NewSnapshot, func(ctx context.Context, r kv.Reader) error {
 				for k, v := range r.Ascend(ctx, tt.beg, tt.end, &ascendErr) {
 					data, err := io.ReadAll(v)
 					if err != nil {
@@ -181,7 +181,7 @@ func TestAscendDescend(t *testing.T) {
 			// Test Descend
 			var descendKeys []string
 			var descendErr error
-			err = kv.WithReader(context.Background(), db, func(ctx context.Context, r kv.Reader) error {
+			err = kv.WithReader(context.Background(), db.NewSnapshot, func(ctx context.Context, r kv.Reader) error {
 				for k, v := range r.Descend(ctx, tt.beg, tt.end, &descendErr) {
 					data, err := io.ReadAll(v)
 					if err != nil {

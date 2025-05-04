@@ -8,7 +8,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/visvasity/kv"
 	"github.com/visvasity/kvmemdb/mvcc"
 	"github.com/visvasity/syncmap"
 )
@@ -39,8 +38,6 @@ type Database struct {
 	// database. Uncommitted changes are cached in their respective transactions.
 	kvs syncmap.Map[string, *mvcc.MultiValue]
 }
-
-var _ kv.Database[*Transaction, *Snapshot] = &Database{}
 
 // New creates an empty in-memory database.
 func New() *Database {

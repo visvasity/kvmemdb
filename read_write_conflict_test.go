@@ -17,7 +17,7 @@ func TestReadWriteConflict(t *testing.T) {
 	db := New()
 
 	// Initialize with a key
-	err := kv.WithReadWriter(ctx, db, func(ctx context.Context, rw kv.ReadWriter) error {
+	err := kv.WithReadWriter(ctx, db.NewTransaction, func(ctx context.Context, rw kv.ReadWriter) error {
 		if err := rw.Set(ctx, "key1", strings.NewReader("initial1")); err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func TestReadWriteConflict(t *testing.T) {
 	// Check final state
 	var finalKey1Value string
 	var finalKey2Value string
-	err = kv.WithReader(ctx, db, func(ctx context.Context, r kv.Reader) error {
+	err = kv.WithReader(ctx, db.NewSnapshot, func(ctx context.Context, r kv.Reader) error {
 		reader, err := r.Get(ctx, "key1")
 		if err != nil {
 			return err
