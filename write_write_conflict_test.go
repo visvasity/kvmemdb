@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/visvasity/kv"
+	"github.com/visvasity/kv/kvutil"
 )
 
 func TestWriteWriteConflict(t *testing.T) {
@@ -17,7 +18,7 @@ func TestWriteWriteConflict(t *testing.T) {
 	db := New()
 
 	// Initialize with a key
-	err := kv.WithReadWriter(ctx, db.NewTransaction, func(ctx context.Context, rw kv.ReadWriter) error {
+	err := kvutil.WithReadWriter(ctx, db.NewTransaction, func(ctx context.Context, rw kv.ReadWriter) error {
 		return rw.Set(ctx, "key1", strings.NewReader("initial"))
 	})
 	if err != nil {
@@ -65,7 +66,7 @@ func TestWriteWriteConflict(t *testing.T) {
 
 	// Check final state
 	var finalValue string
-	err = kv.WithReader(ctx, db.NewSnapshot, func(ctx context.Context, r kv.Reader) error {
+	err = kvutil.WithReader(ctx, db.NewSnapshot, func(ctx context.Context, r kv.Reader) error {
 		reader, err := r.Get(ctx, "key1")
 		if err != nil {
 			return err
