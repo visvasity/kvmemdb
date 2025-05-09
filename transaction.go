@@ -4,6 +4,8 @@ package kvmemdb
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"iter"
 	"log"
@@ -74,7 +76,7 @@ func (t *Transaction) Get(ctx context.Context, key string) (io.Reader, error) {
 
 	if v, ok := t.writes[key]; ok {
 		if v == nil {
-			return nil, os.ErrNotExist
+			return nil, fmt.Errorf("key %s is deleted by this tx: %w", key, os.ErrNotExist)
 		}
 		return strings.NewReader(*v), nil
 	}
@@ -86,13 +88,13 @@ func (t *Transaction) Get(ctx context.Context, key string) (io.Reader, error) {
 	if mv, ok := t.db.kvs.Load(key); ok {
 		if v, ok := mv.Fetch(t.snapshotVersion); ok {
 			if v.IsDeleted() {
-				return nil, os.ErrNotExist
+				return nil, fmt.Errorf("key %s is deleted at this tx read version: %w", key, os.ErrNotExist)
 			}
 			t.reads[key] = v
 			return strings.NewReader(v.Data()), nil
 		}
 	}
-	return nil, os.ErrNotExist
+	return nil, fmt.Errorf("key %s does not exist in the db: %w", key, os.ErrNotExist)
 }
 
 // keys returns all keys between the [begin, end) range in no-specific order.
@@ -164,6 +166,9 @@ func (t *Transaction) Scan(ctx context.Context, errp *error) iter.Seq2[string, i
 		for _, key := range t.keys("", "") {
 			value, err := t.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				*errp = err
 				return
 			}
@@ -189,6 +194,9 @@ func (t *Transaction) Ascend(ctx context.Context, begin, end string, errp *error
 		for _, key := range keys {
 			value, err := t.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				log.Printf("get on key %q out of %v failed: %v", key, keys, err)
 				*errp = err
 				return
@@ -216,6 +224,9 @@ func (t *Transaction) Descend(ctx context.Context, begin, end string, errp *erro
 		for _, key := range keys {
 			value, err := t.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				log.Printf("get on key %q out of %v failed: %v", key, keys, err)
 				*errp = err
 				return

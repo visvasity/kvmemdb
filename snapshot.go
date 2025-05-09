@@ -4,6 +4,7 @@ package kvmemdb
 
 import (
 	"context"
+	"errors"
 	"io"
 	"iter"
 	"os"
@@ -76,6 +77,9 @@ func (s *Snapshot) Scan(ctx context.Context, errp *error) iter.Seq2[string, io.R
 		for _, key := range s.keys("", "") {
 			value, err := s.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				*errp = err
 				return
 			}
@@ -101,6 +105,9 @@ func (s *Snapshot) Ascend(ctx context.Context, begin, end string, errp *error) i
 		for _, key := range keys {
 			value, err := s.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				*errp = err
 				return
 			}
@@ -126,6 +133,9 @@ func (s *Snapshot) Descend(ctx context.Context, begin, end string, errp *error) 
 		for _, key := range keys {
 			value, err := s.Get(ctx, key)
 			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
 				*errp = err
 				return
 			}
