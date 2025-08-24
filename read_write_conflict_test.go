@@ -16,7 +16,7 @@ func TestReadWriteConflict(t *testing.T) {
 	ctx := context.Background()
 
 	mdb := New()
-	db := kv.DatabaseFrom(mdb.NewTransaction, mdb.NewSnapshot)
+	db := kv.DatabaseFrom(mdb)
 
 	// Initialize with a key
 	err := kvutil.WithReadWriter(ctx, db, func(ctx context.Context, rw kv.ReadWriter) error {
