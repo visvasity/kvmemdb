@@ -75,6 +75,9 @@ func (d *Database) NewSnapshot(ctx context.Context) (*Snapshot, error) {
 }
 
 func (d *Database) closeSnapshot(s *Snapshot) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.liveSnaps = slices.DeleteFunc(d.liveSnaps, func(v *Snapshot) bool { return v == s })
 	s.db = nil
 }
@@ -101,6 +104,9 @@ func (d *Database) NewTransaction(ctx context.Context) (*Transaction, error) {
 }
 
 func (d *Database) closeTransaction(t *Transaction) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	d.liveTxes = slices.DeleteFunc(d.liveTxes, func(v *Transaction) bool { return v == t })
 	delete(d.concurrentMap, t)
 	t.db = nil
