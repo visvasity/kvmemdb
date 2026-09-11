@@ -1,6 +1,6 @@
 module github.com/visvasity/kvmemdb
 
-go 1.23.2
+go 1.26.0
 
 require (
 	github.com/visvasity/kv v0.0.0-20251127181103-190fe23c8632
