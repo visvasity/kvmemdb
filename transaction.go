@@ -208,6 +208,69 @@ func (t *Transaction) Ascend(ctx context.Context, begin, end string, errp *error
 	}
 }
 
+// AscendKeys implements the kv.KeyRanger interface to range over the keys
+// between 'begin' and 'end' in ascending order without loading their
+// values. Visited keys are still recorded in the transaction's read set, so
+// key iteration participates in commit-time conflict detection exactly like
+// the value-returning Ascend.
+func (t *Transaction) AscendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if begin != "" && end != "" && begin > end {
+			*errp = os.ErrInvalid
+			return
+		}
+
+		keys := t.keys(begin, end)
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			if _, err := t.Get(ctx, key); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				log.Printf("get on key %q out of %v failed: %v", key, keys, err)
+				*errp = err
+				return
+			}
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
+// DescendKeys implements the kv.KeyRanger interface to range over the keys
+// between 'begin' and 'end' in descending order without loading their
+// values. Visited keys are still recorded in the transaction's read set, so
+// key iteration participates in commit-time conflict detection exactly like
+// the value-returning Descend.
+func (t *Transaction) DescendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if begin != "" && end != "" && begin > end {
+			*errp = os.ErrInvalid
+			return
+		}
+
+		keys := t.keys(begin, end)
+		sort.Strings(keys)
+		slices.Reverse(keys)
+
+		for _, key := range keys {
+			if _, err := t.Get(ctx, key); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				log.Printf("get on key %q out of %v failed: %v", key, keys, err)
+				*errp = err
+				return
+			}
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
 // Ascend implements kv.Scanner interface to range over key-value pairs between
 // 'begin' and 'end' keys in the database in descending order.
 func (t *Transaction) Descend(ctx context.Context, begin, end string, errp *error) iter.Seq2[string, io.Reader] {

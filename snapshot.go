@@ -146,6 +146,61 @@ func (s *Snapshot) Descend(ctx context.Context, begin, end string, errp *error) 
 	}
 }
 
+// AscendKeys implements the kv.KeyRanger interface to range over the keys
+// between 'begin' and 'end' in ascending order without loading their values.
+func (s *Snapshot) AscendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if begin != "" && end != "" && begin > end {
+			*errp = os.ErrInvalid
+			return
+		}
+
+		keys := s.keys(begin, end)
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			if _, err := s.Get(ctx, key); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				*errp = err
+				return
+			}
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
+// DescendKeys implements the kv.KeyRanger interface to range over the keys
+// between 'begin' and 'end' in descending order without loading their values.
+func (s *Snapshot) DescendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		if begin != "" && end != "" && begin > end {
+			*errp = os.ErrInvalid
+			return
+		}
+
+		keys := s.keys(begin, end)
+		sort.Strings(keys)
+		slices.Reverse(keys)
+
+		for _, key := range keys {
+			if _, err := s.Get(ctx, key); err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					continue
+				}
+				*errp = err
+				return
+			}
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
 // Discard releases the snapshot.
 func (s *Snapshot) Discard(ctx context.Context) error {
 	if s.db == nil {
