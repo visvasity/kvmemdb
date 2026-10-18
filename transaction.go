@@ -42,6 +42,9 @@ type Transaction struct {
 // Set creates or updates a key-value pair in the database. The input key
 // cannot be empty and input value cannot be nil.
 func (t *Transaction) Set(ctx context.Context, key string, value io.Reader) error {
+	if t.db == nil {
+		return os.ErrClosed
+	}
 	if len(key) == 0 || value == nil {
 		return os.ErrInvalid
 	}
@@ -59,6 +62,9 @@ func (t *Transaction) Set(ctx context.Context, key string, value io.Reader) erro
 // Delete removes the input key and the associated value. Returns nil even when
 // the input key doesn't exist.
 func (t *Transaction) Delete(ctx context.Context, key string) error {
+	if t.db == nil {
+		return os.ErrClosed
+	}
 	if len(key) == 0 {
 		return os.ErrInvalid
 	}
@@ -70,6 +76,9 @@ func (t *Transaction) Delete(ctx context.Context, key string) error {
 // Get returns the value associated with the input key. Returns os.ErrNotExist
 // if key was deleted or doesn't exist.
 func (t *Transaction) Get(ctx context.Context, key string) (io.Reader, error) {
+	if t.db == nil {
+		return nil, os.ErrClosed
+	}
 	if len(key) == 0 {
 		return nil, os.ErrInvalid
 	}
@@ -186,6 +195,10 @@ func (t *Transaction) Rollback(ctx context.Context) error {
 // the database.
 func (t *Transaction) Scan(ctx context.Context, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if t.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		for _, key := range t.keys("", "") {
 			value, err := t.Get(ctx, key)
 			if err != nil {
@@ -206,6 +219,10 @@ func (t *Transaction) Scan(ctx context.Context, errp *error) iter.Seq2[string, i
 // 'begin' and 'end' keys in the database in ascending order.
 func (t *Transaction) Ascend(ctx context.Context, begin, end string, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if t.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -238,6 +255,10 @@ func (t *Transaction) Ascend(ctx context.Context, begin, end string, errp *error
 // the value-returning Ascend.
 func (t *Transaction) AscendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
 	return func(yield func(string) bool) {
+		if t.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -269,6 +290,10 @@ func (t *Transaction) AscendKeys(ctx context.Context, begin, end string, errp *e
 // the value-returning Descend.
 func (t *Transaction) DescendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
 	return func(yield func(string) bool) {
+		if t.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -298,6 +323,10 @@ func (t *Transaction) DescendKeys(ctx context.Context, begin, end string, errp *
 // 'begin' and 'end' keys in the database in descending order.
 func (t *Transaction) Descend(ctx context.Context, begin, end string, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if t.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return

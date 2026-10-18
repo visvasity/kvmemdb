@@ -25,6 +25,9 @@ type Snapshot struct {
 // Get returns the value associated with the input key. Returns os.ErrNotExist
 // if key was deleted or doesn't exist.
 func (s *Snapshot) Get(ctx context.Context, key string) (io.Reader, error) {
+	if s.db == nil {
+		return nil, os.ErrClosed
+	}
 	if len(key) == 0 {
 		return nil, os.ErrInvalid
 	}
@@ -74,6 +77,10 @@ func (s *Snapshot) keys(begin, end string) []string {
 // the database.
 func (s *Snapshot) Scan(ctx context.Context, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if s.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		for _, key := range s.keys("", "") {
 			value, err := s.Get(ctx, key)
 			if err != nil {
@@ -94,6 +101,10 @@ func (s *Snapshot) Scan(ctx context.Context, errp *error) iter.Seq2[string, io.R
 // 'begin' and 'end' keys in the database in ascending order.
 func (s *Snapshot) Ascend(ctx context.Context, begin, end string, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if s.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -122,6 +133,10 @@ func (s *Snapshot) Ascend(ctx context.Context, begin, end string, errp *error) i
 // 'begin' and 'end' keys in the database in descending order.
 func (s *Snapshot) Descend(ctx context.Context, begin, end string, errp *error) iter.Seq2[string, io.Reader] {
 	return func(yield func(string, io.Reader) bool) {
+		if s.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -150,6 +165,10 @@ func (s *Snapshot) Descend(ctx context.Context, begin, end string, errp *error) 
 // between 'begin' and 'end' in ascending order without loading their values.
 func (s *Snapshot) AscendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
 	return func(yield func(string) bool) {
+		if s.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
@@ -177,6 +196,10 @@ func (s *Snapshot) AscendKeys(ctx context.Context, begin, end string, errp *erro
 // between 'begin' and 'end' in descending order without loading their values.
 func (s *Snapshot) DescendKeys(ctx context.Context, begin, end string, errp *error) iter.Seq[string] {
 	return func(yield func(string) bool) {
+		if s.db == nil {
+			*errp = os.ErrClosed
+			return
+		}
 		if begin != "" && end != "" && begin > end {
 			*errp = os.ErrInvalid
 			return
