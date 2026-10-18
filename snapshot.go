@@ -201,10 +201,11 @@ func (s *Snapshot) DescendKeys(ctx context.Context, begin, end string, errp *err
 	}
 }
 
-// Discard releases the snapshot.
+// Discard releases the snapshot. Discarding a snapshot that was already
+// discarded is a no-op that returns os.ErrClosed.
 func (s *Snapshot) Discard(ctx context.Context) error {
 	if s.db == nil {
-		return os.ErrInvalid
+		return os.ErrClosed
 	}
 	s.db.closeSnapshot(s)
 	return nil

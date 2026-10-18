@@ -150,9 +150,16 @@ func (t *Transaction) keys(begin, end string) []string {
 // database. Returns nil on success. Transaction is effectively destroyed
 // irrespective of the result and no operations should be performed any
 // further.
+//
+// Committing a transaction that has already committed is a no-op that returns
+// nil. Committing a transaction that was rolled back (or whose earlier commit
+// failed) returns os.ErrClosed.
 func (t *Transaction) Commit(ctx context.Context) error {
 	if t.db == nil {
-		return os.ErrInvalid
+		if t.committed {
+			return nil
+		}
+		return os.ErrClosed
 	}
 	defer t.db.closeTransaction(t)
 
@@ -164,9 +171,12 @@ func (t *Transaction) Commit(ctx context.Context) error {
 
 // Rollback drops all updates performed by the transaction. Transaction is
 // effectively destroyed and no operations should be performed any further.
+//
+// Rolling back a transaction that was already committed or rolled back returns
+// os.ErrClosed.
 func (t *Transaction) Rollback(ctx context.Context) error {
 	if t.db == nil {
-		return os.ErrInvalid
+		return os.ErrClosed
 	}
 	t.db.closeTransaction(t)
 	return nil
