@@ -82,18 +82,31 @@ func (t *Transaction) Get(ctx context.Context, key string) (io.Reader, error) {
 	}
 
 	if v, ok := t.reads[key]; ok {
+		// A nil or deleted entry records that the key was observed to be absent
+		// at this transaction's read version.
+		if v == nil || v.IsDeleted() {
+			return nil, fmt.Errorf("key %s does not exist at this tx read version: %w", key, os.ErrNotExist)
+		}
 		return strings.NewReader(v.Data()), nil
 	}
 
 	if mv, ok := t.db.kvs.Load(key); ok {
 		if v, ok := mv.Fetch(t.snapshotVersion); ok {
+			// Record the observed version even when the key is deleted, so that a
+			// later write to this key is treated as a tracked read-modify-write
+			// (and participates in conflict detection) rather than a blind write.
+			t.reads[key] = v
 			if v.IsDeleted() {
 				return nil, fmt.Errorf("key %s is deleted at this tx read version: %w", key, os.ErrNotExist)
 			}
-			t.reads[key] = v
 			return strings.NewReader(v.Data()), nil
 		}
 	}
+
+	// The key does not exist at this transaction's read version. Record the
+	// absence as a read so that creating the key becomes a tracked write that
+	// conflicts with a concurrent create of the same key.
+	t.reads[key] = nil
 	return nil, fmt.Errorf("key %s does not exist in the db: %w", key, os.ErrNotExist)
 }
 
