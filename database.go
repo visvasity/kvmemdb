@@ -71,6 +71,11 @@ func (d *Database) NewSnapshot(ctx context.Context) (*Snapshot, error) {
 		db:              d,
 		snapshotVersion: d.maxCommitVersion,
 	}
+
+	// Register the snapshot as live so that commit-time version compaction
+	// (see minVersionLocked) preserves the versions this snapshot can still
+	// read, until it is discarded.
+	d.liveSnaps = append(d.liveSnaps, s)
 	return s, nil
 }
 
